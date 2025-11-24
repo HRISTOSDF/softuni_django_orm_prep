@@ -9,7 +9,7 @@ from main_app.querysets import AuthorQuerySet
 # Create your models here.
 class Author(models.Model):
     full_name = models.CharField(
-        max_length= 3,
+        max_length= 100,
         validators= [MinLengthValidator(3)]
     )
     email = models.EmailField(
