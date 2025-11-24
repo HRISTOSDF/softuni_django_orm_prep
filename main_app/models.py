@@ -1,7 +1,8 @@
 from django.core.validators import MinLengthValidator, MinValueValidator, MaxValueValidator
 from django.db import models
 
-from main_app.mixins import PublishedOnMixin
+from main_app.choices import ArticleCategoryChoice
+from main_app.mixins import PublishedOnMixin, ContentMixin
 
 
 # Create your models here.
@@ -27,7 +28,39 @@ class Author(models.Model):
         null= True
     )
 
-class Article(PublishedOnMixin):
+class Article(PublishedOnMixin, ContentMixin):
     title=  models.CharField(
-
+        max_length= 200,
+        validators=[MinLengthValidator(5)]
     )
+    category = models.CharField(
+        max_length= 10,
+        choices= ArticleCategoryChoice.choices,
+        default= ArticleCategoryChoice.TECHNOLOGY
+    )
+    authors = models.ManyToManyField(
+        to= 'Author',
+        related_name= 'articles'
+    )
+
+class Review(PublishedOnMixin, ContentMixin):
+    rating = models.FloatField(
+        validators=[
+            MinValueValidator(1.0),
+            MaxValueValidator(5.0)
+        ]
+    )
+    author = models.ForeignKey(
+        to='Author',
+        on_delete= models.CASCADE,
+        related_name= 'reviews'
+    )
+    article = models.ForeignKey(
+        to= 'Article',
+        on_delete= models.CASCADE,
+        related_name= 'reviews'
+    )
+
+
+
+
