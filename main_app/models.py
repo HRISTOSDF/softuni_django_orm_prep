@@ -3,6 +3,7 @@ from django.db import models
 
 from main_app.choices import ArticleCategoryChoice
 from main_app.mixins import PublishedOnMixin, ContentMixin
+from main_app.querysets import AuthorQuerySet
 
 
 # Create your models here.
@@ -27,6 +28,8 @@ class Author(models.Model):
         blank= True,
         null= True
     )
+
+    objects = AuthorQuerySet.as_manager()
 
 class Article(PublishedOnMixin, ContentMixin):
     title=  models.CharField(
