@@ -1,14 +1,18 @@
 import os
 import django
 from django.db import connection
-from django.db.models import Q
-from django.db.models.aggregates import Count
+
 
 # Set up Django
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "orm_skeleton.settings")
 django.setup()
 
-from main_app.models import Author
+from django.db.models import Q
+from django.db.models.aggregates import Count, Avg
+
+from main_app.models import Author, Article, Review
+
+
 # Import your models here
 
 def get_authors(search_name=None, search_email=None):
@@ -61,12 +65,54 @@ def get_top_reviewer():
     return f"Top Reviewer: {top_reviewer.full_name} with {top_reviewer.num_of_reviews} published reviews."
 
 
+def get_latest_article():
+    latest_article = (Article.objects
+                      .annotate(number_of_reviews = Count('reviews'), avg_rating = Avg('reviews__rating'))
+                      .filter(number_of_reviews__gt= 0)
+                      .latest('published_on')
+                      )
+
+    if not latest_article:
+        return ""
+
+    authors = ', '.join([a.full_name for a in latest_article.authors.all().order_by('full_name')])
+
+    return (f"The latest article is: {latest_article.title}. "
+            f"Authors: {authors}. Reviewed: {latest_article.number_of_reviews} times."
+            f" Average Rating: {latest_article.avg_rating:.2f}.")
 
 
 
+def get_top_rated_article():
+    top_article= (Article.objects
+                  .annotate(avg_rating= Avg('reviews__rating'),num_reviews= Count('reviews'))
+                  .filter(num_reviews__gt = 0)
+                  .order_by('-avg_rating', 'title')
+                  .first()
+                  )
+
+    if not top_article:
+        return ""
+
+    return (f"The top-rated article is: {top_article.title},"
+            f" with an average rating of {top_article.avg_rating:.2f}, reviewed {top_article.num_reviews} times.")
 
 
+def ban_author(email=None):
+    if email is None:
+        return "No authors banned."
+    searched_author = Author.objects.annotate(num_reviews= Count('reviews')).filter(email__exact= email).first()
 
+    if not searched_author:
+        return "No authors banned."
+
+
+    Review.objects.filter(author=searched_author.id).delete()
+
+    Author.objects.filter(id= searched_author.id).update(is_banned= True)
+
+
+    return f"{searched_author.full_name} is banned! {searched_author.num_reviews} reviews deleted."
 
 
 
